@@ -2,7 +2,7 @@
     "countries": {
         "076": {
             "name": "Brazil",
-            "guest_count": 10
+            "guest_count": 11
         },
         "752": {
             "name": "Sweden",
@@ -34,6 +34,10 @@
         },
         "032": {
             "name": "Argentina",
+            "guest_count": 1
+        },
+        "300": {
+            "name": "Greece",
             "guest_count": 1
         }
     }
