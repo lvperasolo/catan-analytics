@@ -1,0 +1,40 @@
+{
+    "countries": {
+        "076": {
+            "name": "Brazil",
+            "guest_count": 10
+        },
+        "752": {
+            "name": "Sweden",
+            "guest_count": 2
+        },
+        "276": {
+            "name": "Germany",
+            "guest_count": 6
+        },
+        "804": {
+            "name": "Ukraine",
+            "guest_count": 1
+        },
+        "250": {
+            "name": "France",
+            "guest_count": 1
+        },
+        "380": {
+            "name": "Italy",
+            "guest_count": 1
+        },
+        "152": {
+            "name": "Chile",
+            "guest_count": 1
+        },
+        "008": {
+            "name": "Albania",
+            "guest_count": 1
+        },
+        "032": {
+            "name": "Argentina",
+            "guest_count": 1
+        }
+    }
+}

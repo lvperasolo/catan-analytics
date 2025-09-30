@@ -1,0 +1,462 @@
+:root {
+    --text-primary: #8b4513;
+    --text-secondary: #a0522d;
+    --text-muted: #b8860b;
+    --text-accent: #8b4513;
+    --text-interactive: #1d4ed8;
+    --text-hover: #1e40af;
+    --text-success: #3b82f6;
+    --text-warning: #93c5fd;
+    --text-error: #1d4ed8;
+    --text-overlay: rgba(139, 69, 19, 0.9);
+    --text-light: #ffffff;
+    --text-shadow: rgba(255, 255, 255, 0.8);
+    --font-heading: 'Playfair Display', serif;
+    --font-body: 'Source Sans 3', sans-serif;
+}
+
+.catan-analytics h1.name {
+    color: var(--text-primary) !important;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 2.5rem;
+    text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.5);
+}
+
+.catan-analytics {
+    position: relative;
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.02) 0%, rgba(220, 38, 38, 0.02) 100%);
+    min-height: 100vh;
+    width: 100%;
+}
+
+.catan-analytics.container {
+    max-width: 1800px !important;
+    margin: 0 auto !important;
+    padding: 4rem 2rem 2rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+.catan-analytics .content {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.catan-analytics header {
+    text-align: left;
+    width: 100%;
+    margin-bottom: 2rem;
+    align-self: flex-start;
+}
+
+.catan-analytics::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('assets/jp-catan.jpg');
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    opacity: 0.5;
+    z-index: -1;
+    pointer-events: none;
+    transform: translateX(0);
+}
+
+.catan-analytics .chart-section {
+    background: transparent;
+    backdrop-filter: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.catan-analytics .data-summary {
+    background: transparent;
+    backdrop-filter: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.catan-analytics .chart-section h3 {
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid rgba(30, 64, 175, 0.3);
+}
+
+.catan-analytics .data-summary h3 {
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid rgba(30, 64, 175, 0.3);
+}
+
+.catan-analytics .stat-label {
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.catan-analytics .stat-value {
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+
+.globe-section {
+    display: flex;
+    flex-direction: column;
+    grid-column: span 4;
+}
+
+.globe-container {
+    position: relative;
+    width: 100%;
+    height: 450px;
+    background: transparent;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(139, 69, 19, 0.2);
+}
+
+.globe-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.country {
+    stroke: #334155;
+    stroke-width: 0.3;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.country:hover {
+    stroke: #ffffff;
+    stroke-width: 2;
+    filter: brightness(1.2);
+}
+
+.globe-tooltip {
+    position: absolute;
+    background: rgba(15, 23, 42, 0.95);
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    line-height: 1.4;
+}
+
+.globe-tooltip.show {
+    opacity: 1;
+}
+
+.country-info-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0;
+    min-width: 250px;
+    max-width: 300px;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 1001;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.country-info-panel.show {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.country-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 8px 8px 0 0;
+}
+
+.country-info-header h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: rgba(139, 69, 19, 0.1);
+    color: var(--text-accent);
+}
+
+.country-info-content {
+    padding: 1.25rem;
+}
+
+.country-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.country-stat:last-child {
+    margin-bottom: 0;
+}
+
+.country-stat .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.country-stat .stat-value {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: right;
+}
+
+.charts-container {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: auto auto;
+    gap: 1.5rem;
+    margin: 0 auto 2rem auto;
+    width: 100%;
+    max-width: 1800px;
+}
+
+.chart-section {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    grid-row: 2;
+}
+
+.chart-section h3, .data-summary h3 {
+    margin: 0 0 1rem 0;
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(139, 69, 19, 0.2);
+    padding-bottom: 0.5rem;
+    text-shadow: 0 1px 2px var(--text-shadow);
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 350px;
+    width: 100%;
+}
+
+.data-summary {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: 100%;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: transparent;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.stat-item:hover {
+    border-color: var(--text-accent);
+    box-shadow: 0 2px 4px rgba(139, 69, 19, 0.15);
+    transform: translateY(-1px);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    text-shadow: 0 1px 2px var(--text-shadow);
+}
+
+.stat-label {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    text-shadow: 0 1px 2px var(--text-shadow);
+}
+
+@media (max-width: 1200px) {
+    .charts-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .globe-section {
+        grid-column: span 3;
+    }
+}
+
+@media (max-width: 768px) {
+    .catan-analytics::before {
+        background-attachment: scroll;
+        background-position: center center;
+        opacity: 0.4;
+    }
+    
+    .catan-analytics.container {
+        padding: 2rem 1rem 1rem !important;
+    }
+    
+    .charts-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        gap: 1.5rem;
+    }
+    
+    .globe-section {
+        grid-column: span 1;
+        grid-row: 2;
+    }
+    
+    .chart-wrapper {
+        height: 350px;
+    }
+    
+    .globe-container {
+        height: 400px;
+    }
+    
+    .country-info-panel {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+        max-width: none;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .stat-item {
+        padding: 0.75rem;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+    }
+    
+    .tooltip-content {
+        width: 180px;
+        font-size: 0.7rem;
+        padding: 0.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .catan-analytics::before {
+        opacity: 0.4;
+        background-position: center center;
+    }
+    
+    .catan-analytics.container {
+        padding: 1.5rem 0.75rem 1rem !important;
+    }
+    
+    .charts-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        gap: 1.5rem;
+    }
+    
+    .chart-section {
+        padding: 1rem;
+    }
+    
+    .chart-wrapper {
+        height: 300px;
+    }
+    
+    .globe-container {
+        height: 350px;
+    }
+    
+    .country-info-panel {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
+    
+    .country-info-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .country-info-content {
+        padding: 1rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

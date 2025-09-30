@@ -1,0 +1,1 @@
+- Core of plot (data & func. inspiration) from https://observablehq.com/@d3/world-tour (Last accessed: 30.09.2025)
