@@ -21,9 +21,9 @@
     {"player": "Lucas", "season":  "Q3 2025", "titles": 0, "points": 8},
     {"player": "Guest Model", "season":  "Q3 2025", "titles": 0, "points": 10},
 
-    {"player": "Catarina", "season": "Q4 2025", "titles": 2, "points": 43},
-    {"player": "Giovana", "season": "Q4 2025", "titles": 0, "points": 39},
-    {"player": "Leo", "season": "Q4 2025", "titles": 0, "points": 37},
-    {"player": "Lucas", "season":  "Q4 2025", "titles": 1, "points": 39},
-    {"player": "Guest Model", "season":  "Q4 2025", "titles": 1, "points": 33}
+    {"player": "Catarina", "season": "Q4 2025", "titles": 2, "points": 61},
+    {"player": "Giovana", "season": "Q4 2025", "titles": 1, "points": 63},
+    {"player": "Leo", "season": "Q4 2025", "titles": 0, "points": 53},
+    {"player": "Lucas", "season":  "Q4 2025", "titles": 2, "points": 58},
+    {"player": "Guest Model", "season":  "Q4 2025", "titles": 1, "points": 50}
 ]
