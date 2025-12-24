@@ -26,9 +26,9 @@
                 <h1 class="name">Catan Analytics</h1>
                 <p class="tagline">tracking the rise and fall of CATAN empires</p>
 
-            <p class="bg-credit" style="font-size:0.95em; color:white; margin-top:0.5em; text-shadow:1px 1px 2px rgba(0, 0, 0, 0.3);">
+            <p class="bg-credit" style="font-size:0.9em; color:#ffffff; margin-top:0.5em; font-weight:600; text-shadow:0 2px 12px rgba(0,0,0,0.8), 0 4px 24px rgba(0,0,0,0.6), 0 0 4px rgba(0,0,0,0.5);">
                 <span aria-label="artist credit" title="Background photo by Jotapê">
-                    background art by <a href="https://readymag.website/u926078996/5153336/" target="_blank" rel="noopener" style="color:var(--text-accent); text-decoration:underline dotted;">Jotapê</a> 🖼️
+                    background art by <a href="https://readymag.website/u926078996/5153336/" target="_blank" rel="noopener" style="color:#4da3ff; text-decoration:none; border-bottom:1px dotted #80bdff; font-weight:600; text-shadow:0 2px 12px rgba(0,0,0,0.8), 0 4px 24px rgba(0,0,0,0.6), 0 0 4px rgba(0,0,0,0.5);">Jotapê</a> 🖼️
                 </span>
             </p>
             </header>
@@ -57,7 +57,7 @@
 
 
                     <div class="chart-section globe-section">
-                        <h3>Global Guest Analytics</h3>
+                        <h3>Guests by Country</h3>
                         <div class="globe-container">
                             <svg class="globe-svg" id="globeSvg"></svg>
                             <div class="globe-tooltip" id="globeTooltip"></div>
@@ -89,299 +89,100 @@
     </main>
 
     <script>
+        const playerColors = ['#00d4ff', '#ff0099', '#00ff88', '#ffffff', '#ffee00'];
+        const globeColors = {base: '#2a2a2a', guests: ['#66d9ff', '#33c3ff', '#00aaff', '#0088ff']};
         
-        const catanColors = {
-            text: '#1e293b',
-            grid: '#e2e8f0'
-        };
+        let catanData = [], charts = {}, worldData, projection, path, svg, g, rotationInterval;
 
-        const playerColors = [
-            '#1e40af', '#dc2626', '#059669', '#7c3aed',
-            '#ea580c', '#0891b2', '#be185d', '#65a30d'
-        ];
-
-        const globeColors = {
-            base: '#1e293b',  // Default color for countries with no guests
-            guests: [
-                '#cfe2ff',    // 1-2 guests (lightest blue)
-                '#93c5fd',    // 3-4 guests
-                '#3b82f6',    // 5-7 guests
-                '#1d4ed8',    // 8-10 guests (darkest blue)
-            ]
-        };
-
-        const chartConfig = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 20,
-                        font: { family: 'var(--font-body)', size: 12 }
-                    }
-                }
-            },
-            scales: {
-                x: { grid: { color: catanColors.grid } },
-                y: { grid: { color: catanColors.grid } }
-            }
-        };
-
-        const debug = msg => console.log(`[Catan Analytics] ${msg}`);
-
-        
-        let catanData = [];
-        let charts = {};
-        let worldData = null;
-        let guestData = null;
-        let projection = null;
-        let path = null;
-        let svg = null;
-        let g = null;
-        let isRotating = false;
-        let rotationInterval = null;
-
-        const utils = {
-            getPlayerColor: (playerName, allPlayers) => {
-                const playerIndex = allPlayers.indexOf(playerName);
-                return playerColors[playerIndex % playerColors.length];
-            },
-
-            sortSeasons: (seasons) => {
-                return seasons.sort((a, b) => {
-                    const yearA = parseInt(a.split(' ')[1]);
-                    const yearB = parseInt(b.split(' ')[1]);
-                    const quarterA = a.split(' ')[0];
-                    const quarterB = b.split(' ')[0];
-                    if (yearA !== yearB) return yearA - yearB;
-                    return quarterA.localeCompare(quarterB);
-                });
-            },
-
-            destroyChart: (chartName) => {
-                if (charts[chartName]) {
-                    charts[chartName].destroy();
-                    charts[chartName] = null;
-                }
-            }
-        };
-
-        
-        const dataProcessor = {
-            groupBySeason: (data, metric) => {
-                const grouped = {};
-                data.forEach(row => {
-                    if (!grouped[row.season]) grouped[row.season] = {};
-                    if (!grouped[row.season][row.player]) grouped[row.season][row.player] = 0;
-                    grouped[row.season][row.player] += row[metric];
-                });
-                return grouped;
-            },
-
-
-            getPlayersAndSeasons: (data) => {
-                const players = Array.from(new Set(data.map(row => row.player))).sort();
-                const seasons = utils.sortSeasons(Array.from(new Set(data.map(row => row.season))));
-                return { players, seasons };
-            }
-        };
-
-        
-        const chartCreator = {
-            createDataset: (player, data, seasons, playerColor) => ({
-                label: player,
-                data: data,
-                borderColor: playerColor,
-                backgroundColor: playerColor + '20',
-                tension: 0.4,
-                fill: false,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }),
-
-            createChart: (ctx, type, data, options) => {
-                return new Chart(ctx, {
-                    type: type,
-                    data: data,
-                    options: { ...chartConfig, ...options }
-                });
-            }
-        };
-
+        const getPlayerColor = (name, all) => playerColors[all.indexOf(name) % playerColors.length];
+        const sortSeasons = arr => arr.sort((a, b) => {
+            const [qA, yA] = a.split(' '), [qB, yB] = b.split(' ');
+            return yA !== yB ? yA - yB : qA.localeCompare(qB);
+        });
         
         async function initGlobe() {
             try {
-                if (typeof d3 === 'undefined') {
-                    throw new Error('D3.js library not loaded');
-                }
-                
-                await loadWorldData();
-                
-                setupWorldTour();
-            } catch (error) {
-                debug('Error loading globe data: ' + error.message);
-                setTimeout(() => {
-                    const globeContainer = document.querySelector('.globe-container');
-                    if (globeContainer) {
-                        globeContainer.innerHTML = `
-                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #ef4444; font-size: 0.9rem; padding: 2rem;">
-                                Error loading globe: ${error.message}
-                            </div>
-                        `;
-                    } else {
-                        console.error('Globe container not found for error display');
-                    }
-                }, 100);
-            }
-        }
-
-        async function loadWorldData() {
-            try {
-            
-                const [worldResponse, guestResponse] = await Promise.all([
-                    fetch('data/countries-110m.json'), // Source: https://observablehq.com/@d3/world-tour (last accessed: 30.09.2025 )
-                    fetch('data/guest_counts.json')
+                const [world, guests] = await Promise.all([
+                    fetch('data/countries-110m.json').then(r => r.json()),
+                    fetch('data/guest_counts.json').then(r => r.json()).catch(() => ({countries: {}}))
                 ]);
-
-                if (!worldResponse.ok) {
-                    throw new Error(`Failed to fetch world data: HTTP ${worldResponse.status}`);
-                }
                 
-                worldData = await worldResponse.json();
-                
-                if (!worldData) {
-                    throw new Error('World data is null or undefined');
-                }
-                
-                if (!worldData.objects || !worldData.objects.countries || !worldData.objects.countries.geometries) {
-                    throw new Error('Invalid world data structure');
-                }
-                let guestCounts = {};
-                if (guestResponse.ok) {
-                    const guestData = await guestResponse.json();
-                    guestCounts = guestData.countries || {};
-                }
-
-    
-                worldData.objects.countries.geometries.forEach(country => {
-                    if (!country.properties) country.properties = {};
-                    const guestInfo = guestCounts[country.id];
-                    country.properties.guest_count = guestInfo ? guestInfo.guest_count : 0;
+                worldData = world;
+                worldData.objects.countries.geometries.forEach(c => {
+                    c.properties = c.properties || {};
+                    c.properties.guest_count = guests.countries?.[c.id]?.guest_count || 0;
                 });
                 
-                debug(`World data loaded with ${worldData.objects.countries.geometries.length} countries`);
-                
-            } catch (error) {
-                debug('Failed to load local world data: ' + error.message);
-                throw error;
+                setupGlobe();
+            } catch (e) {
+                document.querySelector('.globe-container').innerHTML = 
+                    `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444">Error: ${e.message}</div>`;
             }
         }
 
-        function getCountryColor(guestCount) {
-            if (guestCount === 0) return globeColors.base;
-            if (guestCount <= 2) return globeColors.guests[0];
-            if (guestCount <= 4) return globeColors.guests[1];
-            if (guestCount <= 7) return globeColors.guests[2];
-            return globeColors.guests[3];
-        }
+        const getCountryColor = c => c === 0 ? globeColors.base : globeColors.guests[Math.min(3, c <= 2 ? 0 : c <= 4 ? 1 : c <= 7 ? 2 : 3)];
 
-        function setupWorldTour() {
-            try {
+        function setupGlobe() {
                 svg = d3.select('#globeSvg');
-                if (svg.empty()) {
-                    throw new Error('Globe SVG element not found');
-                }
-                
                 g = svg.append('g');
 
-                const graticule = d3.geoGraticule();
+            const w = svg.node().clientWidth, h = svg.node().clientHeight;
+            projection = d3.geoOrthographic()
+                .scale(Math.min(w, h) * 0.4)
+                .rotate([0, -30])
+                .translate([w/2, h/2]);
+            path = d3.geoPath().projection(projection);
+            
                 g.append('path')
-                    .datum(graticule)
-                    .attr('class', 'graticule')
+                .datum(d3.geoGraticule())
                     .attr('d', path)
                     .style('fill', 'none')
                     .style('stroke', '#ccc')
-                    .style('stroke-opacity', 0.2)
-                    .style('stroke-width', 0.5);
-                
-                const containerWidth = svg.node().clientWidth;
-                const containerHeight = svg.node().clientHeight;
-                
-                if (containerWidth === 0 || containerHeight === 0) {
-                    throw new Error('Globe container has zero dimensions');
-                }
-                
-                projection = d3.geoOrthographic()
-                    .scale(Math.min(containerWidth, containerHeight) * 0.4)
-                    .center([0, 0])
-                    .rotate([0, -30])
-                    .translate([containerWidth / 2, containerHeight / 2]);
-                
-                path = d3.geoPath().projection(projection);
-                
-                
-                const countries = topojson.feature(worldData, worldData.objects.countries);
-                
-                if (!countries || !countries.features) {
-                    throw new Error('Invalid world data format');
-                }
-                
-                const countryPaths = g.selectAll('.country')
-                    .data(countries.features)
-                    .enter()
-                    .append('path')
+                .style('stroke-opacity', 0.2);
+            
+            g.selectAll('.country')
+                .data(topojson.feature(worldData, worldData.objects.countries).features)
+                .enter().append('path')
                     .attr('class', 'country')
                     .attr('d', path)
-                    .attr('data-country-code', d => d.id || d.properties.ISO_A2)
-                    .attr('data-guest-count', d => d.properties.guest_count || 0)
                     .style('fill', d => getCountryColor(d.properties.guest_count || 0))
                     .style('stroke', '#334155')
-                    .style('stroke-width', 0.3)
-                    .on('mouseover', handleCountryMouseOver)
-                    .on('mouseout', handleCountryMouseOut)
-                    .on('click', handleCountryClick);
-                
-                const drag = d3.drag()
-                    .on('start', dragStarted)
-                    .on('drag', dragged)
-                    .on('end', dragEnded);
-                
-                svg.call(drag);
-    
-                startRotation();
-                
-            } catch (error) {
-                debug.error('Error in setupWorldTour', error);
-                throw error;
-            }
-        }
-
-        function dragStarted(event) {
-            // Only stop rotation if this is actually a drag, not a click
-            // We'll check this in the dragged function
-        }
-
-        function dragged(event) {
-            const c = projection.center();
-            const r = projection.rotate();
-            const k = 25;
-            projection.rotate([
-                r[0] + event.dx / k,
-                r[1] - event.dy / k
-            ]);
-            g.selectAll('path').attr('d', path);
-        }
-
-        function dragEnded() {
-            startRotation();
-        }
-
-        function startRotation() {
-            if (isRotating) return;
+                .on('mouseover', function(e, d) {
+                    const c = d.properties.guest_count || 0, n = d.properties.name || d.properties.NAME || d.properties.ADMIN || 'Unknown';
+                    d3.select(this).style('stroke', '#fff').style('stroke-width', 2);
+                    d3.select('#globeTooltip')
+                        .style('left', e.x+15+'px').style('top', e.y-15+'px')
+                        .html(`<strong>${n}</strong><br><span style="color:#a8c5e0">${c===0?'No visitors':c===1?'1 visitor':c+' visitors'}</span>`)
+                        .classed('show', true);
+                })
+                .on('mouseout', function() {
+                    d3.select(this).style('stroke', '#475569').style('stroke-width', 0.5);
+                    d3.select('#globeTooltip').classed('show', false);
+                })
+                .on('click', (e, d) => {
+                    const c = d.properties.guest_count || 0, n = d.properties.name || d.properties.NAME || d.properties.ADMIN || 'Unknown';
+                    const statuses = [[11,'Top destination!','#2d5a8c'],[6,'Popular destination','#2d5a8c'],[2,'Growing interest','#4a7bb5'],[1,'First visitor!','#4a7bb5'],[0,'No visitors yet','#6b6b6b']];
+                    const [,text,color] = statuses.find(([min]) => c >= min);
+                    document.getElementById('countryName').textContent = n;
+                    document.getElementById('countryVisitors').textContent = c;
+                    Object.assign(document.getElementById('countryStatus').style, {color});
+                    document.getElementById('countryStatus').textContent = text;
+                    document.getElementById('countryInfoPanel').classList.add('show');
+                });
             
-            isRotating = true;
+            svg.call(d3.drag().on('drag', e => {
+                const r = projection.rotate();
+                projection.rotate([r[0] + e.dx/25, r[1] - e.dy/25]);
+                g.selectAll('path').attr('d', path);
+            }).on('end', () => {
+                clearInterval(rotationInterval);
+                rotationInterval = setInterval(() => {
+            const r = projection.rotate();
+                    projection.rotate([r[0] + 0.2, r[1]]);
+            g.selectAll('path').attr('d', path);
+                }, 30);
+            }));
+            
             rotationInterval = setInterval(() => {
                 const r = projection.rotate();
                 projection.rotate([r[0] + 0.2, r[1]]);
@@ -389,168 +190,76 @@
             }, 30);
         }
 
-        function stopRotation() {
-            if (!isRotating) return;
+        function createChart(id, metric) {
+            charts[id]?.destroy();
+            const players = [...new Set(catanData.map(r => r.player))].sort();
+            const seasons = sortSeasons([...new Set(catanData.map(r => r.season))]);
+            const grouped = {};
+            catanData.forEach(r => {
+                (grouped[r.season] = grouped[r.season] || {})[r.player] = (grouped[r.season][r.player] || 0) + r[metric];
+            });
             
-            isRotating = false;
-            clearInterval(rotationInterval);
+            charts[id] = new Chart(document.getElementById(id), {
+                type: 'line',
+                data: {
+                    labels: seasons,
+                    datasets: players.map(p => ({
+                        label: p,
+                        data: seasons.map(s => grouped[s][p] || 0),
+                        borderColor: getPlayerColor(p, players),
+                        backgroundColor: getPlayerColor(p, players) + '20',
+                        tension: 0,
+                        stepped: true,
+                        fill: false,
+                        pointRadius: 4
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } } },
+                    scales: { x: { grid: { color: 'rgba(42,67,101,0.12)' } }, y: { grid: { color: 'rgba(42,67,101,0.12)' } } }
+                }
+            });
         }
-
-        function handleCountryMouseOver(event, d) {
-            const guestCount = d.properties.guest_count || 0;
-            const countryName = d.properties.name || d.properties.NAME || d.properties.ADMIN || 'Unknown';
-            
-            d3.select(this)
-                .style('stroke', '#ffffff')
-                .style('stroke-width', 2);
-            
-            const tooltip = d3.select('#globeTooltip');
-            const visitorText = guestCount === 0 ? 'No visitors yet' : 
-                              guestCount === 1 ? '1 visitor' : 
-                              `${guestCount} visitors`;
-            
-            tooltip
-                .style('left', (event.x + 15) + 'px')
-                .style('top', (event.y - 15) + 'px')
-                .html(`
-                    <strong>${countryName}</strong><br>
-                    <span style="color: #60a5fa;">${visitorText}</span>
-                `)
-                .classed('show', true);
-        }
-
-        function handleCountryMouseOut(event) {
-            d3.select(this)
-                .style('stroke', '#475569')
-                .style('stroke-width', 0.5);
-            
-            d3.select('#globeTooltip').classed('show', false);
-        }
-
-        function handleCountryClick(event, d) {
-            const guestCount = d.properties.guest_count || 0;
-            const countryName = d.properties.name || d.properties.NAME || d.properties.ADMIN || 'Unknown';
-            showCountryInfo(countryName, guestCount);
-        }
-
-        function showCountryInfo(countryName, guestCount) {
-            const panel = document.getElementById('countryInfoPanel');
-            const nameElement = document.getElementById('countryName');
-            const visitorsElement = document.getElementById('countryVisitors');
-            const statusElement = document.getElementById('countryStatus');
-            
-            nameElement.textContent = countryName;
-            visitorsElement.textContent = guestCount;
-            
-            const statusMap = {
-                0: { text: 'No visitors yet', color: '#64748b' },
-                1: { text: 'First visitor!', color: '#3b82f6' },
-                2: { text: 'Growing interest', color: '#93c5fd' },
-                6: { text: 'Popular destination', color: '#3b82f6' },
-                11: { text: 'Top destination!', color: '#1d4ed8' }
-            };
-            const statusKey = Object.keys(statusMap)
-                .map(Number)
-                .reverse()
-                .find(key => guestCount >= key);
-            const { text: status, color: statusColor } = statusMap[statusKey];
-            
-            statusElement.textContent = status;
-            statusElement.style.color = statusColor;
-        
-            panel.classList.add('show');
-        }
-
-        function hideCountryInfo() {
-            const panel = document.getElementById('countryInfoPanel');
-            panel.classList.remove('show');
-        }
-
-
         
         async function loadData() {
             try {
-                const response = await fetch('data/catan_stats.json');
-                if (!response.ok) throw new Error('Stats not found');
-                catanData = await response.json();
+                catanData = await fetch('data/catan_stats.json').then(r => r.json());
                 
-                updateAllCharts();
-                updateSummaryStats();
+                createChart('titlesChart', 'titles');
+                createChart('pointsChart', 'points');
+                
+                const stats = {
+                    seasons: new Set(catanData.map(r => r.season)).size,
+                    titles: catanData.reduce((s, r) => s + r.titles, 0),
+                    points: catanData.reduce((s, r) => s + r.points, 0),
+                    countries: 0
+                };
+                
+                // Load country count from guest data
+                fetch('data/guest_counts.json')
+                    .then(r => r.json())
+                    .then(data => {
+                        stats.countries = Object.keys(data.countries || {}).length;
+                        document.getElementById('summary-stats').innerHTML = 
+                            ['Seasons', 'Total Titles', 'Total Points', 'Country Count']
+                            .map((label, i) => `<div class="stat-item"><div class="stat-value">${Object.values(stats)[i]}</div><div class="stat-label">${label}</div></div>`)
+                            .join('');
+                    })
+                    .catch(() => {
+                        document.getElementById('summary-stats').innerHTML = 
+                            ['Seasons', 'Total Titles', 'Total Points', 'Country Count']
+                            .map((label, i) => `<div class="stat-item"><div class="stat-value">${Object.values(stats)[i]}</div><div class="stat-label">${label}</div></div>`)
+                            .join('');
+                    });
                 
                 await initGlobe();
-                
-                document.getElementById('closeCountryInfo').addEventListener('click', hideCountryInfo);
-            } catch (error) {
-                debug('Error loading data: ' + error.message);
+                document.getElementById('closeCountryInfo').onclick = () => document.getElementById('countryInfoPanel').classList.remove('show');
+            } catch(e) {
                 document.getElementById('summary-stats').innerHTML = 'Could not load statistics.';
             }
         }
-
-        
-        const chartUpdater = {
-            updateBasicChart: (chartId, data, metric, title) => {
-                const ctx = document.getElementById(chartId).getContext('2d');
-                const { players, seasons } = dataProcessor.getPlayersAndSeasons(data);
-                const groupedData = dataProcessor.groupBySeason(data, metric);
-                
-                utils.destroyChart(chartId);
-                
-                const datasets = players.map(player => {
-                    const playerColor = utils.getPlayerColor(player, players);
-                    const playerData = seasons.map(season => groupedData[season][player] || 0);
-                    return chartCreator.createDataset(player, playerData, seasons, playerColor);
-                });
-
-                charts[chartId] = chartCreator.createChart(ctx, 'line', {
-                    labels: seasons,
-                    datasets: datasets
-                }, {
-                    plugins: {
-                        ...chartConfig.plugins,
-                        title: {
-                            display: true,
-                            text: title,
-                            font: { family: 'var(--font-heading)', size: 14, weight: '500' }
-                        }
-                    }
-                });
-            },
-
-        };
-
-        function updateAllCharts() {
-            chartUpdater.updateBasicChart('titlesChart', catanData, 'titles', 'Titles Won by Player Over Time');
-            chartUpdater.updateBasicChart('pointsChart', catanData, 'points', 'Points Earned by Player Over Time');
-        }
-
-        function updateSummaryStats() {
-            
-            const totalTitles = catanData.reduce((sum, row) => sum + row.titles, 0);
-            const totalPoints = catanData.reduce((sum, row) => sum + row.points, 0);
-            const uniquePlayers = new Set(catanData.map(row => row.player)).size;
-            const uniqueSeasons = new Set(catanData.map(row => row.season)).size;
-            
-
-            document.getElementById('summary-stats').innerHTML = `
-                <div class="stat-item">
-                    <div class="stat-value">${uniquePlayers}</div>
-                    <div class="stat-label">Players</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">${uniqueSeasons}</div>
-                    <div class="stat-label">Seasons</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">${totalTitles}</div>
-                    <div class="stat-label">Total Titles</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">${totalPoints}</div>
-                    <div class="stat-label">Total Points</div>
-                </div>
-            `;
-        }
-
         
         document.addEventListener('DOMContentLoaded', loadData);
     </script>
