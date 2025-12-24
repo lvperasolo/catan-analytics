@@ -1,3 +1,0 @@
-["thanos", "greece", 30092025, 7]
-["jujuba", "brazil", 30092025, 12]
-["tritium", "brazil", 30092025, 12]

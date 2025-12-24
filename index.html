@@ -23,13 +23,29 @@
     <main>
         <div class="container catan-analytics">
             <header>
+                <div class="title-container">
                 <h1 class="name">Catan Analytics</h1>
+                    <span class="info-icon" aria-label="About this dashboard">ℹ️</span>
+                    <div class="story-box">
+                        <p class="story-subtitle">As the dice first rolled, so was it foretold.</p>
+                        
+                        <p class="story-text">
+                            <span class="story-initial">L</span>ady Giovana led her pupils across the seas unto the fertile lands of CATAN, and there she ruled—wise in craft and heavy in victory. Long did her dominion stand, until those she had taught grew sharp of mind and bold of will. Her pupils learned her ways, read the signs of wood and stone, and by wit rather than war unseated her crown. Thus were Lady Giovana and her pupils alike made the Lords of CATAN, bound forever to the table.
+                        </p>
+                        
+                        <p class="story-text">
+                            <span class="story-initial">F</span>rom distant lands come pilgrims bearing faith in fate and dreams of glory, yet fooled by the cruel whims of chance. They cast the dice, swear bold oaths, and trust in fortune… only to find misrule, mischance, and sheep most treacherous.
+                        </p>
+                        
+                        <p class="story-text">
+                            <span class="story-initial">A</span> rare few fulfill the prophecy and depart victorious. Yet crowned or crushed, no challenger is ever forgotten, their deeds held in memory by the Lords of the table—and may it be so: whether fortune smiles or turns away, all who sit at this table depart richer in laughter and "lighter" of spirit.
+                        </p>
+                    </div>
+                </div>
                 <p class="tagline">tracking the rise and fall of CATAN empires</p>
 
-            <p class="bg-credit" style="font-size:0.9em; color:#ffffff; margin-top:0.5em; font-weight:600; text-shadow:0 2px 12px rgba(0,0,0,0.8), 0 4px 24px rgba(0,0,0,0.6), 0 0 4px rgba(0,0,0,0.5);">
-                <span aria-label="artist credit" title="Background photo by Jotapê">
-                    background art by <a href="https://readymag.website/u926078996/5153336/" target="_blank" rel="noopener" style="color:#4da3ff; text-decoration:none; border-bottom:1px dotted #80bdff; font-weight:600; text-shadow:0 2px 12px rgba(0,0,0,0.8), 0 4px 24px rgba(0,0,0,0.6), 0 0 4px rgba(0,0,0,0.5);">Jotapê</a> 🖼️
-                </span>
+            <p class="bg-credit">
+                background art by <a href="https://readymag.website/u926078996/5153336/" target="_blank" rel="noopener">Jotapê</a> 🖼️
             </p>
             </header>
 
@@ -57,7 +73,18 @@
 
 
                     <div class="chart-section globe-section">
-                        <h3>Guests by Country</h3>
+                        <div class="section-title-container">
+                            <h3>Guests by Country</h3>
+                            <span class="info-icon-small" aria-label="About Guest Model">ℹ️</span>
+                            <div class="guest-info-box">
+                                <p class="guest-info-title">Guests</p>
+                                <p class="guest-info-text">
+                                    Challengers from distant lands, their deeds worthy of preservation and honor in these chronicles.
+                                </p>
+                                <p class="guest-info-subtitle">Honored Challengers:</p>
+                                <div class="challenger-list" id="challengerList">Loading...</div>
+                            </div>
+                        </div>
                         <div class="globe-container">
                             <svg class="globe-svg" id="globeSvg"></svg>
                             <div class="globe-tooltip" id="globeTooltip"></div>
@@ -223,6 +250,16 @@
             });
         }
         
+        async function loadChallengers() {
+            try {
+                const text = await fetch('data/challengers.txt').then(r => r.text());
+                document.getElementById('challengerList').innerHTML = text.split('\n').filter(n => n.trim()).sort()
+                    .map(n => `<span class="challenger-name">${n}</span>`).join('');
+            } catch(e) {
+                document.getElementById('challengerList').innerHTML = 'Unable to load challengers';
+            }
+        }
+
         async function loadData() {
             try {
                 catanData = await fetch('data/catan_stats.json').then(r => r.json());
@@ -230,29 +267,23 @@
                 createChart('titlesChart', 'titles');
                 createChart('pointsChart', 'points');
                 
-                const stats = {
-                    seasons: new Set(catanData.map(r => r.season)).size,
-                    titles: catanData.reduce((s, r) => s + r.titles, 0),
-                    points: catanData.reduce((s, r) => s + r.points, 0),
-                    countries: 0
-                };
+                loadChallengers();
                 
-                // Load country count from guest data
+                const stats = [
+                    new Set(catanData.map(r => r.season)).size,
+                    catanData.reduce((s, r) => s + r.titles, 0),
+                    catanData.reduce((s, r) => s + r.points, 0),
+                    0
+                ];
+                
+                const renderStats = () => document.getElementById('summary-stats').innerHTML = 
+                    ['Seasons', 'Total Titles', 'Total Points', 'Country Count']
+                    .map((l, i) => `<div class="stat-item"><div class="stat-value">${stats[i]}</div><div class="stat-label">${l}</div></div>`).join('');
+                
                 fetch('data/guest_counts.json')
                     .then(r => r.json())
-                    .then(data => {
-                        stats.countries = Object.keys(data.countries || {}).length;
-                        document.getElementById('summary-stats').innerHTML = 
-                            ['Seasons', 'Total Titles', 'Total Points', 'Country Count']
-                            .map((label, i) => `<div class="stat-item"><div class="stat-value">${Object.values(stats)[i]}</div><div class="stat-label">${label}</div></div>`)
-                            .join('');
-                    })
-                    .catch(() => {
-                        document.getElementById('summary-stats').innerHTML = 
-                            ['Seasons', 'Total Titles', 'Total Points', 'Country Count']
-                            .map((label, i) => `<div class="stat-item"><div class="stat-value">${Object.values(stats)[i]}</div><div class="stat-label">${label}</div></div>`)
-                            .join('');
-                    });
+                    .then(d => { stats[3] = Object.keys(d.countries || {}).length; renderStats(); })
+                    .catch(renderStats);
                 
                 await initGlobe();
                 document.getElementById('closeCountryInfo').onclick = () => document.getElementById('countryInfoPanel').classList.remove('show');
